@@ -13,6 +13,14 @@ This program simulates banking transactions, specifically focusing on how to sec
 This program simulates checking out items from an online store's inventory.
 - **Key Feature:** Performs `JOIN` queries to merge Product and Category data, runs Aggregate functions (`SUM`) to calculate inventory values, and uses Conditional Updates (`stock_quantity >= ?`) to safely reduce stock in a concurrent environment.
 
+## 3. Employee Management System (`Program3_Employee`)
+This program demonstrates managing employee records and applying department-wide updates.
+- **Key Feature:** Performs Batch Updates by safely increasing salaries across a department based on a calculated percentage using a single parameter. 
+
+## 4. Library Book Checkout System (`Program4_Library`)
+This program simulates borrowing books from a library, demonstrating complex multi-table transaction updates.
+- **Key Feature:** Manages Foreign Key dependencies and multi-statement transactions. Safely reduces book availability (checking if copies > 0) and inserts checkout records, ensuring data consistency with `commit` and `rollback`.
+
 ---
 
 ## 🛠️ How to Set Up in Eclipse
