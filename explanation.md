@@ -10,15 +10,16 @@ This guide provides a high-level overview of Programs 5 and 6, designed to help 
 ### Purpose
 The goal of this program is to optimize application performance and reduce unnecessary network traffic by utilizing the database as a temporary caching layer for external API requests. Instead of repeatedly querying an external service, the application stores the response in the database for 5 minutes.
 
-### How It Works
-1. **Request Interception:** When the service requests data from an API endpoint, the system first queries the `api_cache` MySQL table for that specific URL.
-2. **Cache Validation:** It checks the `timestamp_ms` column. If the record is less than 5 minutes old, it immediately returns the cached response, saving time and bandwidth.
-3. **Network Fallback:** If the cache is expired or missing, it makes a standard HTTP GET request using Java's `HttpURLConnection`, retrieves the JSON payload, and updates the database cache.
+### How It Works (L1 / L2 Cache Architecture)
+To optimize performance and database load, this program implements a modern **Multi-Level Cache**:
+1. **L1 (In-Memory RAM):** Uses the `Caffeine` library to cache data directly in the Java application's RAM. It is checked first. If data is found (a Cache Hit), it is returned instantly (~0.1ms).
+2. **L2 (MySQL Database):** If the data is missing from L1 (e.g., after a server restart), the system queries the `api_cache` MySQL table. If a valid record exists, it is promoted back to the L1 cache and returned (~2-5ms).
+3. **L3 (Network Fallback):** If the cache is expired or completely missing, it makes an HTTP GET request to the external API, retrieves the JSON payload, and updates both the L2 database and the L1 RAM cache.
 
 ### Key Concepts Demonstrated to Highlight:
+* **Multi-Level Caching:** Demonstrates an enterprise understanding of protecting the database from unnecessary read queries by placing an ultra-fast Caffeine RAM cache in front of it.
 * **"Upsert" Logic:** Demonstrates advanced SQL via the `ON DUPLICATE KEY UPDATE` clause, which elegantly handles inserting a new cache record or updating an existing one without throwing duplicate primary key errors.
-* **Network Integration:** Proves the ability to bridge database logic with external web services in Core Java without relying on heavy third-party HTTP client libraries.
-* **Time-Based Data Expiration:** Implements local caching logic comparing UNIX timestamps to enforce data freshness.
+* **Time-Based Data Expiration:** Implements sophisticated eviction policies, using `expireAfterWrite` in Caffeine and UNIX timestamp comparisons in MySQL to enforce strict data freshness.
 
 ---
 

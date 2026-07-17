@@ -7,7 +7,7 @@ public class JsonRelationalMain {
         System.out.println("=== JSON to Relational DB Converter ===");
         JsonService service = new JsonService();
 
-    
+        // Standard JSON format with double quotes (escaped for Java String)
         String jsonPayload = 
             "[{\"id\":1, \"name\":\"Alice\", \"hobbies\":[\"reading\",\"hiking\"]}, " +
             "{\"id\":2, \"name\":\"Bob\", \"hobbies\":[\"gaming\"]}, " +
