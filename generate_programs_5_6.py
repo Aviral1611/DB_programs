@@ -184,13 +184,22 @@ public class ApiCacheMain {
 
         System.out.println("\\n[Request 1 - Cold Start]");
         String result1 = service.getData(apiUrl);
+        System.out.println("Result: " + result1);
 
-        System.out.println("\\n[Request 2 - Immediate follow-up]");
+        System.out.println("\\n[Request 2 - Immediate Follow-up]");
         String result2 = service.getData(apiUrl);
+        System.out.println("Result: " + result2);
         
-        System.out.println("\\nNote: To see an L2 Database hit, you would typically restart this application.");
-        System.out.println("Because the RAM cache (L1) is destroyed on exit, but the Database (L2) persists,");
-        System.out.println("the next time you run this, Request 1 will be an [L2 CACHE HIT]!");
+        System.out.println("\\n--- Simulating Application Restart ---");
+        System.out.println("Destroying old Service (and its L1 RAM cache)...");
+        
+        // Creating a new service simulates a server restart because the old 
+        // in-memory Caffeine cache is destroyed and a fresh, empty one is created.
+        ApiService newService = new ApiService();
+        
+        System.out.println("\\n[Request 3 - After App Restart]");
+        String result3 = newService.getData(apiUrl);
+        System.out.println("Result: " + result3);
     }
 }
 """,
