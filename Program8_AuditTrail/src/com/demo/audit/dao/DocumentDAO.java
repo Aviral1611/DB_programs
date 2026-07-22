@@ -8,24 +8,18 @@ import java.sql.Statement;
 
 public class DocumentDAO {
 
-    public int createDocument(Connection conn, String title, String content, String author) throws SQLException {
-        String sql = "INSERT INTO documents (title, content, last_updated_by) VALUES (?, ?, ?)";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            pstmt.setString(1, title);
-            pstmt.setString(2, content);
-            pstmt.setString(3, author);
+    public void createDocument(Connection conn, String docId, String title, String content, String author) throws SQLException {
+        String sql = "INSERT INTO documents (doc_id, title, content, last_updated_by) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, docId);
+            pstmt.setString(2, title);
+            pstmt.setString(3, content);
+            pstmt.setString(4, author);
             pstmt.executeUpdate();
-            
-            try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
         }
-        return -1;
     }
 
-    public void updateDocument(Connection conn, int docId, String newTitle, String newContent, String editor) throws SQLException {
+    public void updateDocument(Connection conn, String docId, String newTitle, String newContent, String editor) throws SQLException {
         // Step 1: Fetch the current version of the document and lock the row using FOR UPDATE
         String selectSql = "SELECT title, content FROM documents WHERE doc_id = ? FOR UPDATE";
         String insertHistorySql = "INSERT INTO document_history (doc_id, old_title, old_content, changed_by) VALUES (?, ?, ?, ?)";
@@ -35,7 +29,7 @@ public class DocumentDAO {
         String oldContent = null;
 
         try (PreparedStatement selectStmt = conn.prepareStatement(selectSql)) {
-            selectStmt.setInt(1, docId);
+            selectStmt.setString(1, docId);
             try (ResultSet rs = selectStmt.executeQuery()) {
                 if (rs.next()) {
                     oldTitle = rs.getString("title");
@@ -48,7 +42,7 @@ public class DocumentDAO {
 
         // Step 2: Save the old version to the history table
         try (PreparedStatement historyStmt = conn.prepareStatement(insertHistorySql)) {
-            historyStmt.setInt(1, docId);
+            historyStmt.setString(1, docId);
             historyStmt.setString(2, oldTitle);
             historyStmt.setString(3, oldContent);
             historyStmt.setString(4, editor); // The person making the change
@@ -60,16 +54,16 @@ public class DocumentDAO {
             updateStmt.setString(1, newTitle);
             updateStmt.setString(2, newContent);
             updateStmt.setString(3, editor);
-            updateStmt.setInt(4, docId);
+            updateStmt.setString(4, docId);
             updateStmt.executeUpdate();
         }
     }
 
-    public void displayHistory(Connection conn, int docId) throws SQLException {
+    public void displayHistory(Connection conn, String docId) throws SQLException {
         // Display current document
         String currentSql = "SELECT * FROM documents WHERE doc_id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(currentSql)) {
-            pstmt.setInt(1, docId);
+            pstmt.setString(1, docId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     System.out.println("\n--- Current Version (Live) ---");
@@ -83,7 +77,7 @@ public class DocumentDAO {
         // Display history trail
         String historySql = "SELECT * FROM document_history WHERE doc_id = ? ORDER BY changed_at DESC";
         try (PreparedStatement pstmt = conn.prepareStatement(historySql)) {
-            pstmt.setInt(1, docId);
+            pstmt.setString(1, docId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 System.out.println("\n--- Version History Trail (Newest to Oldest) ---");
                 while (rs.next()) {

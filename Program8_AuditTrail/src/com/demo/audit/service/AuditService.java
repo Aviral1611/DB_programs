@@ -4,6 +4,10 @@ import com.demo.audit.dao.DocumentDAO;
 import com.demo.audit.db.DatabaseConnection;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 public class AuditService {
     private DocumentDAO docDAO = new DocumentDAO();
@@ -23,7 +27,13 @@ public class AuditService {
             conn.setAutoCommit(false);
             
             System.out.println("1. Alice creates the initial document...");
-            int docId = docDAO.createDocument(conn, "Project Alpha - Draft", "This is the initial draft.", "Alice");
+            String docId = generateUuidFromApi();
+            if (docId == null) {
+                System.out.println("Failed to get UUID from API. Aborting.");
+                return;
+            }
+            System.out.println("   [API] Generated UUID: " + docId);
+            docDAO.createDocument(conn, docId, "Project Alpha - Draft", "This is the initial draft.", "Alice");
             conn.commit(); // Commit the creation
             
             // Sleep so timestamps look distinct
@@ -56,6 +66,21 @@ public class AuditService {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    private String generateUuidFromApi() {
+        try {
+            URL url = new URL("https://www.uuidgenerator.net/api/version4");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                return reader.readLine(); // The API returns a single line with the UUID
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

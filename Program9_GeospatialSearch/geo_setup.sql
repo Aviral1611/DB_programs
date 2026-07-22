@@ -1,0 +1,9 @@
+CREATE DATABASE IF NOT EXISTS demo_geo;
+USE demo_geo;
+
+CREATE TABLE IF NOT EXISTS locations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    latitude DECIMAL(10, 8) NOT NULL,
+    longitude DECIMAL(11, 8) NOT NULL
+);

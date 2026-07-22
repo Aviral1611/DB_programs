@@ -2,7 +2,7 @@ CREATE DATABASE IF NOT EXISTS demo_audit;
 USE demo_audit;
 
 CREATE TABLE IF NOT EXISTS documents (
-    doc_id INT AUTO_INCREMENT PRIMARY KEY,
+    doc_id VARCHAR(36) PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
     last_updated_by VARCHAR(100) NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS documents (
 
 CREATE TABLE IF NOT EXISTS document_history (
     history_id INT AUTO_INCREMENT PRIMARY KEY,
-    doc_id INT NOT NULL,
+    doc_id VARCHAR(36) NOT NULL,
     old_title VARCHAR(255),
     old_content TEXT,
     changed_by VARCHAR(100),
