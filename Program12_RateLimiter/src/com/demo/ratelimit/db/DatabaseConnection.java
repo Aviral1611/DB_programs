@@ -1,13 +1,13 @@
-package com.demo.audit.db;
+package com.demo.ratelimit.db;
 
-import com.demo.audit.util.ConfigLoader;
+import com.demo.ratelimit.util.ConfigLoader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
  * Database connection factory.
- * Reads credentials from config.properties — zero hardcoding.
+ * Reads credentials from config.properties instead of hardcoding them.
  */
 public class DatabaseConnection {
 

@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS documents (
 CREATE TABLE IF NOT EXISTS document_history (
     history_id INT AUTO_INCREMENT PRIMARY KEY,
     doc_id VARCHAR(36) NOT NULL,
+    version_number INT NOT NULL,
     old_title VARCHAR(255),
     old_content TEXT,
     changed_by VARCHAR(100),

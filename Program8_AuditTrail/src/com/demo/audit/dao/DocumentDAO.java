@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 public class DocumentDAO {
 
@@ -19,10 +18,27 @@ public class DocumentDAO {
         }
     }
 
+    /**
+     * Gets the next version number for a document by counting existing history entries.
+     * Version 1 = the first edit (archiving the original draft).
+     */
+    private int getNextVersionNumber(Connection conn, String docId) throws SQLException {
+        String sql = "SELECT COALESCE(MAX(version_number), 0) + 1 AS next_version FROM document_history WHERE doc_id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, docId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("next_version");
+                }
+            }
+        }
+        return 1;
+    }
+
     public void updateDocument(Connection conn, String docId, String newTitle, String newContent, String editor) throws SQLException {
         // Step 1: Fetch the current version of the document and lock the row using FOR UPDATE
         String selectSql = "SELECT title, content FROM documents WHERE doc_id = ? FOR UPDATE";
-        String insertHistorySql = "INSERT INTO document_history (doc_id, old_title, old_content, changed_by) VALUES (?, ?, ?, ?)";
+        String insertHistorySql = "INSERT INTO document_history (doc_id, version_number, old_title, old_content, changed_by) VALUES (?, ?, ?, ?, ?)";
         String updateDocSql = "UPDATE documents SET title = ?, content = ?, last_updated_by = ? WHERE doc_id = ?";
 
         String oldTitle = null;
@@ -40,12 +56,14 @@ public class DocumentDAO {
             }
         }
 
-        // Step 2: Save the old version to the history table
+        // Step 2: Get the next version number and save the old version to the history table
+        int versionNumber = getNextVersionNumber(conn, docId);
         try (PreparedStatement historyStmt = conn.prepareStatement(insertHistorySql)) {
             historyStmt.setString(1, docId);
-            historyStmt.setString(2, oldTitle);
-            historyStmt.setString(3, oldContent);
-            historyStmt.setString(4, editor); // The person making the change
+            historyStmt.setInt(2, versionNumber);
+            historyStmt.setString(3, oldTitle);
+            historyStmt.setString(4, oldContent);
+            historyStmt.setString(5, editor); // The person making the change
             historyStmt.executeUpdate();
         }
 
@@ -57,6 +75,8 @@ public class DocumentDAO {
             updateStmt.setString(4, docId);
             updateStmt.executeUpdate();
         }
+
+        System.out.println("   [VERSIONED] Archived as Version " + versionNumber);
     }
 
     public void displayHistory(Connection conn, String docId) throws SQLException {
@@ -66,7 +86,10 @@ public class DocumentDAO {
             pstmt.setString(1, docId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    System.out.println("\n--- Current Version (Live) ---");
+                    // Count total versions to show current version number
+                    int totalVersions = getNextVersionNumber(conn, docId);
+                    System.out.println("\n--- Current Version (v" + totalVersions + " - Live) ---");
+                    System.out.println("Doc ID: " + rs.getString("doc_id"));
                     System.out.println("Title: " + rs.getString("title"));
                     System.out.println("Content: " + rs.getString("content"));
                     System.out.println("Last Updated By: " + rs.getString("last_updated_by") + " at " + rs.getTimestamp("last_updated_at"));
@@ -74,16 +97,17 @@ public class DocumentDAO {
             }
         }
 
-        // Display history trail
-        String historySql = "SELECT * FROM document_history WHERE doc_id = ? ORDER BY changed_at DESC";
+        // Display history trail with version numbers
+        String historySql = "SELECT * FROM document_history WHERE doc_id = ? ORDER BY version_number DESC";
         try (PreparedStatement pstmt = conn.prepareStatement(historySql)) {
             pstmt.setString(1, docId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 System.out.println("\n--- Version History Trail (Newest to Oldest) ---");
                 while (rs.next()) {
-                    System.out.println("Previous Version saved by: " + rs.getString("changed_by") + " on " + rs.getTimestamp("changed_at"));
-                    System.out.println("  Old Title: " + rs.getString("old_title"));
-                    System.out.println("  Old Content: " + rs.getString("old_content"));
+                    int version = rs.getInt("version_number");
+                    System.out.println("[v" + version + "] Saved by: " + rs.getString("changed_by") + " on " + rs.getTimestamp("changed_at"));
+                    System.out.println("  Title: " + rs.getString("old_title"));
+                    System.out.println("  Content: " + rs.getString("old_content"));
                     System.out.println("  -------------------------");
                 }
             }
